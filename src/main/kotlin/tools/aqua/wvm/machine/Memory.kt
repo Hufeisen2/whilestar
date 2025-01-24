@@ -34,6 +34,13 @@ class Memory(private val store: Array<BigInteger>) {
     return Memory(copy)
   }
 
+  fun write(addr: Int, value: Boolean): Memory {
+    checkBounds(addr)
+    val copy = store.copyOf()
+    copy[addr] = if (value) BigInteger.ONE else BigInteger.ZERO
+    return Memory(copy)
+  }
+
   private fun checkBounds(addr: Int) {
     if (addr < 0 || store.size < addr) {
       throw Exception("segmentation fault: tried to access invalid address: $addr")

@@ -245,10 +245,18 @@ class ExpressionTypeReconstruction(private val ctx: Scope) {
     return prf
   }
 
+  fun typeOf(bool: Bool): BoolPrf {
+    val type = BasicType.BOOLEAN
+    val prf = BoolPrf(ctx, bool, type)
+    return prf
+  }
+
+  // TODO fix
   fun typeOf(exp: BooleanExpression): BooleanProofTree {
     when (exp) {
       is True -> return typeOf(exp)
       is False -> return typeOf(exp)
+      is Bool -> return typeOf(exp)
       is Eq -> return typeOf(exp)
       is Gt -> return typeOf(exp)
       is Gte -> return typeOf(exp)
@@ -285,11 +293,19 @@ class ExpressionTypeReconstruction(private val ctx: Scope) {
 class TypeChecker(private val ctx: Scope) {
   val exprTypes: ExpressionTypeReconstruction = ExpressionTypeReconstruction(ctx)
 
-  fun typeOf(stmt: Assignment): AssignmentPrf {
-    val type = BasicType.UNIT
-    val prfL = exprTypes.typeOf(stmt.addr)
-    val prfR = exprTypes.typeOf(stmt.expr)
-    return AssignmentPrf(ctx, stmt, type, prfL, prfR)
+  fun typeOf(stmt: Assignment<*>): StatementProofTree {
+    if (stmt is IntAssignment) {
+      val type = BasicType.UNIT
+      val prfL = exprTypes.typeOf(stmt.addr)
+      val prfR = exprTypes.typeOf(stmt.expr)
+      return IntAssignmentPrf(ctx, stmt, type, prfL, prfR)
+    } else if (stmt is BooleanAssignment) {
+      val type = BasicType.UNIT
+      val prfL = exprTypes.typeOf(stmt.addr)
+      val prfR = exprTypes.typeOf(stmt.expr)
+      return BooleanAssignmentPrf(ctx, stmt, type, prfL, prfR)
+    }
+    throw NotImplementedError("typeOf not implemented for $stmt")
   }
 
   fun typeOf(stmt: Swap): SwapPrf {
@@ -341,7 +357,7 @@ class TypeChecker(private val ctx: Scope) {
 
   fun typeOf(stmt: Statement): StatementProofTree {
     when (stmt) {
-      is Assignment -> return typeOf(stmt)
+      is Assignment<*> -> return typeOf(stmt)
       is Swap -> return typeOf(stmt)
       is Havoc -> return typeOf(stmt)
       is IfThenElse -> return typeOf(stmt)

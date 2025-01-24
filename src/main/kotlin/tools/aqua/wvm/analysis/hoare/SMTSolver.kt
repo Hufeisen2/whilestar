@@ -60,6 +60,7 @@ class SMTSolver {
         is VarAddress -> throw Exception("WPC Proof System cannot compute with var address ${expr}")
       }
 
+  // TODO update bool
   fun asKonstraint(expr: BooleanExpression): Expression<BoolSort> =
       when (expr) {
         is True -> tools.aqua.konstraints.theories.True
@@ -71,6 +72,7 @@ class SMTSolver {
         is Imply -> Implies(asKonstraint(expr.left), asKonstraint(expr.right))
         is Equiv -> Equals(asKonstraint(expr.left), asKonstraint(expr.right))
         is Not -> tools.aqua.konstraints.theories.Not(asKonstraint(expr.negated))
+        is Bool -> tools.aqua.konstraints.theories.True
         is Gt -> IntGreater(asKonstraint(expr.left), asKonstraint(expr.right))
         is Gte -> IntGreaterEq(asKonstraint(expr.left), asKonstraint(expr.right))
         is Lt -> IntLess(asKonstraint(expr.left), asKonstraint(expr.right))

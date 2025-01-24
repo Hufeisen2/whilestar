@@ -149,6 +149,9 @@ sealed class BooleanExpressionError(private val error: String) :
 class NestedBooleanError(val ruleName: String, val nested: Error, val expr: Expression<*>) :
     BooleanExpressionError("$ruleName: $expr.")
 
+class BoolOk(val exprOk: ArithmeticExpressionOk, val gt: Bool, result: Boolean) :
+    BooleanExpressionOk(result)
+
 class EqOk(
     val leftOk: ArithmeticExpressionOk,
     val rightOk: ArithmeticExpressionOk,
@@ -240,7 +243,14 @@ class NestedStatementError(
 class AssOk(
     val addr: AddressOk,
     val expr: ArithmeticExpressionOk,
-    val assign: Assignment,
+    val assign: IntAssignment,
+    trans: Transition
+) : StatementOk(trans)
+
+class AssOk2(
+    val addr: AddressOk,
+    val expr: BooleanExpressionOk,
+    val assign: BooleanAssignment,
     trans: Transition
 ) : StatementOk(trans)
 

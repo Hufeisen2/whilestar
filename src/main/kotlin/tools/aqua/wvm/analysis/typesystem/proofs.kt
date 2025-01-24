@@ -86,6 +86,14 @@ class TruePrf(ctx: Scope, literal: True, type: Type) :
   }
 }
 
+class BoolPrf(ctx: Scope, bool: Bool, type: Type) :
+    BooleanProofTree(ctx, bool, type, "Literal: $bool -> $type") {
+
+  init {
+    expressionType(bool, type, BasicType.BOOLEAN)
+  }
+}
+
 class FalsePrf(ctx: Scope, literal: False, type: Type) :
     BooleanProofTree(ctx, literal, type, "Literal: $literal -> $type") {
 
@@ -424,12 +432,29 @@ open class StatementProofTree(
   }
 }
 
-class AssignmentPrf(
+class IntAssignmentPrf(
     ctx: Scope,
-    stmt: Assignment,
+    stmt: IntAssignment,
     type: Type,
     val lhs: AddressProofTree,
     val rhs: ArithmeticProofTree
+) : StatementProofTree(ctx, stmt, type, "Assignment: $stmt -> $type", lhs, rhs) {
+
+  init {
+    statmentType(stmt, type)
+    proofTreeTermCorrespondence(lhs, stmt.addr)
+    proofTreeTermCorrespondence(rhs, stmt.expr)
+    typeEquality(lhs, rhs)
+    ctxEqual(ctx, lhs.ctx, rhs.ctx)
+  }
+}
+
+class BooleanAssignmentPrf(
+    ctx: Scope,
+    stmt: BooleanAssignment,
+    type: Type,
+    val lhs: AddressProofTree,
+    val rhs: BooleanProofTree
 ) : StatementProofTree(ctx, stmt, type, "Assignment: $stmt -> $type", lhs, rhs) {
 
   init {

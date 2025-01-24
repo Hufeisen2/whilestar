@@ -32,7 +32,20 @@ sealed interface Statement : PrintWithIndentation {
   fun execute(cfg: Configuration, input: Scanner?): StatementApp
 }
 
-data class Assignment(val addr: AddressExpression, val expr: ArithmeticExpression) : Statement {
+abstract class Assignment<T : Expression<*>>(val addr: AddressExpression, val expr: T) : Statement {
+
+  abstract override fun execute(cfg: Configuration, input: Scanner?): StatementApp
+
+  override fun equals(other: Any?) =
+      (other is Assignment<*>) && other.addr == addr && other.expr == expr
+
+  override fun hashCode() = addr.hashCode() + expr.hashCode()
+
+  override fun toIndentedString(indent: String) = "${indent}$addr := $expr;\n"
+}
+
+class IntAssignment(addr: AddressExpression, expr: ArithmeticExpression) :
+    Assignment<ArithmeticExpression>(addr, expr) {
 
   override fun execute(cfg: Configuration, input: Scanner?): StatementApp {
     val a = addr.evaluate(cfg.scope, cfg.memory)
@@ -66,8 +79,43 @@ data class Assignment(val addr: AddressExpression, val expr: ArithmeticExpressio
                     cfg.scope,
                     cfg.memory.write(a.result, e.result))))
   }
+}
 
-  override fun toIndentedString(indent: String) = "${indent}$addr := $expr;\n"
+class BooleanAssignment(addr: AddressExpression, expr: BooleanExpression) :
+    Assignment<BooleanExpression>(addr, expr) {
+
+  override fun execute(cfg: Configuration, input: Scanner?): StatementApp {
+    val a = addr.evaluate(cfg.scope, cfg.memory)
+    val e = expr.evaluate(cfg.scope, cfg.memory)
+
+    if (a is Error)
+        return NestedStatementError(
+            "AssErr",
+            a,
+            this,
+            Transition(
+                cfg, dst = Configuration(SequenceOfStatements(), cfg.scope, cfg.memory, true)))
+
+    if (e is Error)
+        return NestedStatementError(
+            "AssErr",
+            e,
+            this,
+            Transition(
+                cfg, dst = Configuration(SequenceOfStatements(), cfg.scope, cfg.memory, true)))
+
+    return AssOk2(
+        a as AddressOk,
+        e as BooleanExpressionOk,
+        this,
+        Transition(
+            cfg,
+            dst =
+                Configuration(
+                    SequenceOfStatements(cfg.statements.tail()),
+                    cfg.scope,
+                    cfg.memory.write(a.result, e.result))))
+  }
 }
 
 data class Swap(val left: AddressExpression, val right: AddressExpression) : Statement {

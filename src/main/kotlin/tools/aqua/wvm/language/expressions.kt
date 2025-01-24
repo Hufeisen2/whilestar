@@ -204,6 +204,17 @@ data class VarAddress(val variable: Variable) : ArithmeticExpression {
 
 // Boolean Expressions
 
+data class Bool(val expr: ArithmeticExpression) : BooleanExpression {
+  override fun evaluate(scope: Scope, memory: Memory): BooleanExpressionApp {
+    val e = expr.evaluate(scope, memory)
+    if (e is ArithmeticExpressionError) return NestedBooleanError("BoolErr", e, this)
+
+    return BoolOk(e as ArithmeticExpressionOk, this, e.result != BigInteger.ZERO)
+  }
+
+  override fun toString(): String = "($expr)"
+}
+
 data class Eq(val left: ArithmeticExpression, val right: ArithmeticExpression, val nesting: Int) :
     BooleanExpression {
   override fun evaluate(scope: Scope, memory: Memory): BooleanExpressionApp {

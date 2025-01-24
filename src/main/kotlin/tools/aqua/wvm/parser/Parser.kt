@@ -97,6 +97,7 @@ object Parser {
   private val falseKW = of("false") trim whitespaceCat
 
   private val intKW = of("int") trim whitespaceCat
+  private val booleanKW = of("boolean") trim whitespaceCat
   private val vars = of("vars") trim whitespaceCat
   private val code = of("code") trim whitespaceCat
   private val pre = of("pre") trim whitespaceCat
@@ -218,7 +219,11 @@ object Parser {
         results.filterIsInstance<List<*>>().map { it[1] as ArithmeticExpression }
       }
 
-  private val condition = (lparen * booleanExpr * rparen).map { results: List<Any> -> results[1] }
+  private val condition =
+      (lparen * booleanExpr * rparen).map { results: List<Any> -> results[1] } +
+          (lparen * arithExpr * rparen).map { result: List<Any> ->
+            Bool(result[1] as ArithmeticExpression)
+          }
 
   private val block = (lcbr * seqOfStmts * rcbr).map { results: List<Any> -> results[1] }
 
@@ -227,9 +232,12 @@ object Parser {
 
   init {
     stmt.set(
-        (addressExpr * assign * arithExpr * semicolon).map { results: List<Any> ->
-          Assignment(results[0] as AddressExpression, results[2] as ArithmeticExpression)
+        (addressExpr * assign * booleanExpr * semicolon).map { results: List<Any> ->
+          BooleanAssignment(results[0] as AddressExpression, expr = results[2] as BooleanExpression)
         } +
+            (addressExpr * assign * arithExpr * semicolon).map { results: List<Any> ->
+              IntAssignment(results[0] as AddressExpression, results[2] as ArithmeticExpression)
+            } +
             (swapKW * addressExpr * and * addressExpr * semicolon).map { results: List<Any> ->
               Swap(results[1] as AddressExpression, results[3] as AddressExpression)
             } +
@@ -270,6 +278,9 @@ object Parser {
 
   private fun buildType(i: Int): Type = if (i == 0) BasicType.INT else Pointer(buildType(i - 1))
 
+  private fun buildBoolType(i: Int): Type =
+      if (i == 0) BasicType.BOOLEAN else Pointer(buildType(i - 1))
+
   private val typeSize =
       (lsbr * numeral * rsbr).map { results: List<Any> ->
         Pair(
@@ -277,10 +288,24 @@ object Parser {
             Pointer(BasicType.INT))
       } + star.star().map { results: List<Any> -> Pair(1, buildType(results.size)) }
 
-  private val decl =
-      (intKW * typeSize * identifier * semicolon).map { results: List<Any> ->
-        Pair(results[2], results[1])
-      }
+  private val typeSizeBool =
+      (lsbr * numeral * rsbr).map { results: List<Any> ->
+        Pair(
+            (results[1] as String).toInt() + 1, /* +1 for the pointer to the data */
+            Pointer(BasicType.BOOLEAN))
+      } + star.star().map { results: List<Any> -> Pair(1, buildBoolType(results.size)) }
+
+  private val decl = undefined()
+
+  init {
+    decl.set(
+        (intKW * typeSize * identifier * semicolon).map { results: List<Any> ->
+          Pair(results[2], results[1])
+        } +
+            (booleanKW * typeSizeBool * identifier * semicolon).map { results: List<Any> ->
+              Pair(results[2], results[1])
+            })
+  }
 
   private fun buildScope(entries: List<Pair<String, Pair<Int, Type>>>): Scope {
     val info = HashMap<String, Scope.ElementInfo>()

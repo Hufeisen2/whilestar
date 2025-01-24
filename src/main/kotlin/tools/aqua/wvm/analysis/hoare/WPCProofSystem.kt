@@ -69,16 +69,18 @@ class WPCProofSystem(val context: Context, val output: Output) {
             And(
                 Imply(stmt.cond, wpc(stmt.thenBlock, post)),
                 Imply(Not(stmt.cond), wpc(stmt.elseBlock, post)))
-        is Assignment -> wpc(stmt, post)
+        is Assignment<*> -> wpc(stmt, post)
         is Swap -> wpc(stmt, post)
         is Print -> post
         is Fail -> True
         is Havoc -> wpc(stmt, post)
       }
 
-  private fun wpc(stmt: Assignment, post: BooleanExpression): BooleanExpression =
+  private fun wpc(stmt: Assignment<*>, post: BooleanExpression): BooleanExpression =
       when (stmt.addr) {
-        is Variable -> replace(post, stmt.addr, stmt.expr)
+        is Variable ->
+            if (stmt is BooleanAssignment) stmt.expr
+            else replace(post, stmt.addr, stmt.expr as ArithmeticExpression)
         else -> throw Exception("expression (${stmt.addr}) not supported by proof system.")
       }
 
@@ -139,6 +141,7 @@ class WPCProofSystem(val context: Context, val output: Output) {
         is True -> phi
         is False -> phi
         is Not -> Not(replace(phi.negated, v, replacement))
+        is Bool -> Bool(replace(phi.expr, v, replacement))
         is Eq ->
             Eq(replace(phi.left, v, replacement), replace(phi.right, v, replacement), phi.nesting)
         is Gt -> Gt(replace(phi.left, v, replacement), replace(phi.right, v, replacement))

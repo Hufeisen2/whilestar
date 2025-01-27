@@ -1,8 +1,8 @@
 vars:
   boolean x;
 code:
-  x = 0;
-  if(x) {
+  x = true;
+  if(not (x == true)) {
     print "test true";
   } else {
     print "test false";

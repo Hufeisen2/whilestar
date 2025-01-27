@@ -32,13 +32,13 @@ vars:
   int y;
   int z;
 code:
-  x := 10;
-  y := 20;
-  z := x + y;
+  x = 10;
+  y = 20;
+  z = x + y;
   while (x > 0)  {
-    x := x - 1;
-  };
-  y := 0;
+    x = x - 1;
+  }
+  y = 0;
 """)
     println(ctx)
     ctx.execute(true)

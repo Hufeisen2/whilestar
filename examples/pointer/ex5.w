@@ -2,8 +2,8 @@ vars:
   int *x;
   int *y;
 code:
-  if (x==y) {
+  if (x===y) {
     print "ho";
   } else {
     print "hey";
-  };
+  }

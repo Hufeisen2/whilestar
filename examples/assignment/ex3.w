@@ -3,5 +3,5 @@ vars:
   int y;
 pre: (true)
 code:
-  x := x;
+  x = x;
 post: (true)

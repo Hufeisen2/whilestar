@@ -78,7 +78,7 @@ object Parser {
   private val percent = of('%') trim whitespaceCat
   private val amp = of('&') trim whitespaceCat
 
-  private val eq = of('=') trim whitespaceCat
+  private val eq = of("==") trim whitespaceCat
   private val gt = of('>') trim whitespaceCat
   private val gte = of(">=") trim whitespaceCat
   private val lt = of('<') trim whitespaceCat
@@ -103,7 +103,7 @@ object Parser {
   private val pre = of("pre") trim whitespaceCat
   private val post = of("post") trim whitespaceCat
 
-  private val assign = of(":=") trim whitespaceCat
+  private val assign = of("=") trim whitespaceCat
   private val ifKW = of("if") trim whitespaceCat
   private val elseKW = of("else") trim whitespaceCat
   private val whileKW = of("while") trim whitespaceCat
@@ -248,13 +248,13 @@ object Parser {
                   negNumeralToInt(results[2]),
                   (negNumeralToInt(results[4]) + BigInteger.ONE))
             } +
-            (ifKW * condition * block * elseKW * block * semicolon).map { results: List<Any> ->
+            (ifKW * condition * block * elseKW * block).map { results: List<Any> ->
               IfThenElse(
                   results[1] as BooleanExpression,
                   results[2] as SequenceOfStatements,
                   results[4] as SequenceOfStatements)
             } +
-            (whileKW * condition * invar.optional(True) * block * semicolon).map {
+            (whileKW * condition * invar.optional(True) * block).map {
                 results: List<Any> ->
               While(
                   results[1] as BooleanExpression,

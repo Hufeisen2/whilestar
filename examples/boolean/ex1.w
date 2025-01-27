@@ -1,9 +1,9 @@
 vars:
   boolean x;
 code:
-  x := false;
+  x = 0;
   if(x) {
     print "test true";
   } else {
     print "test false";
-  };
+  }

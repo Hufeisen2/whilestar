@@ -172,13 +172,19 @@ object Parser {
 
   private val booleanAtom =
       (lparen * booleanExpr * rparen).map { results: List<Any> -> results[1] } +
+          (addressExpr * eq * trueKW).map { results: List<Any> ->
+            Equiv(Bool(ValAtAddr(results[0] as AddressExpression)), True)
+          } +
+          (addressExpr * eq * falseKW).map { results: List<Any> ->
+            Equiv(Bool(ValAtAddr(results[0] as AddressExpression)), False)
+          } +
           (arithExpr * gt * arithExpr).map { results: List<Any> ->
             Gt(results[0] as ArithmeticExpression, results[2] as ArithmeticExpression)
           } +
           (arithExpr * gte * arithExpr).map { results: List<Any> ->
             Gte(results[0] as ArithmeticExpression, results[2] as ArithmeticExpression)
           } +
-          (arithExpr * eq * eq.star() * arithExpr).map { results: List<Any> ->
+          (arithExpr * eq * assign.star() * arithExpr).map { results: List<Any> ->
             Eq(
                 results[0] as ArithmeticExpression,
                 results[3] as ArithmeticExpression,
@@ -220,10 +226,10 @@ object Parser {
       }
 
   private val condition =
-      (lparen * booleanExpr * rparen).map { results: List<Any> -> results[1] } +
+      (lparen * booleanExpr * rparen).map { results: List<Any> -> results[1] } /*+
           (lparen * arithExpr * rparen).map { result: List<Any> ->
             Bool(result[1] as ArithmeticExpression)
-          }
+          }*/
 
   private val block = (lcbr * seqOfStmts * rcbr).map { results: List<Any> -> results[1] }
 
@@ -254,8 +260,7 @@ object Parser {
                   results[2] as SequenceOfStatements,
                   results[4] as SequenceOfStatements)
             } +
-            (whileKW * condition * invar.optional(True) * block).map {
-                results: List<Any> ->
+            (whileKW * condition * invar.optional(True) * block).map { results: List<Any> ->
               While(
                   results[1] as BooleanExpression,
                   results[3] as SequenceOfStatements,

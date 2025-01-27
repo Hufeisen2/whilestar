@@ -124,7 +124,7 @@ object Parser {
   }
 
   private val arithExpr = undefined()
-  private val booleanExpr = undefined()
+  private val advancedBooleanExpr = undefined()
 
   private val deref = undefined()
 
@@ -170,8 +170,8 @@ object Parser {
             arithAtom.map { atom: ArithmeticExpression -> atom })
   }
 
-  private val booleanAtom =
-      (lparen * booleanExpr * rparen).map { results: List<Any> -> results[1] } +
+  private val boolenAtom =
+      (lparen * advancedBooleanExpr * rparen).map { results: List<Any> -> results[1] } +
           (addressExpr * eq * trueKW).map { results: List<Any> ->
             Equiv(Bool(ValAtAddr(results[0] as AddressExpression)), True)
           } +
@@ -199,22 +199,48 @@ object Parser {
           trueKW.map { _: Any -> True } +
           falseKW.map { _: Any -> False }
 
+  private val advancedBooleanAtom =
+      boolenAtom.map { result: Any -> result } +
+          addressExpr.map { result: Any -> Bool(ValAtAddr(result as AddressExpression)) }
+
   init {
-    booleanExpr.set(
-        (booleanAtom * and * booleanAtom).map { results: List<Any> ->
+    advancedBooleanExpr.set(
+        (advancedBooleanAtom * and * advancedBooleanAtom).map { results: List<Any> ->
           And(results[0] as BooleanExpression, results[2] as BooleanExpression)
         } +
-            (booleanAtom * or * booleanAtom).map { results: List<Any> ->
+            (advancedBooleanAtom * or * advancedBooleanAtom).map { results: List<Any> ->
               Or(results[0] as BooleanExpression, results[2] as BooleanExpression)
             } +
-            (booleanAtom * imply * booleanAtom).map { results: List<Any> ->
+            (advancedBooleanAtom * imply * advancedBooleanAtom).map { results: List<Any> ->
               Imply(results[0] as BooleanExpression, results[2] as BooleanExpression)
             } +
-            (booleanAtom * equiv * booleanAtom).map { results: List<Any> ->
+            (advancedBooleanAtom * equiv * advancedBooleanAtom).map { results: List<Any> ->
               Equiv(results[0] as BooleanExpression, results[2] as BooleanExpression)
             } +
-            (not * booleanAtom).map { results: List<Any> -> Not(results[1] as BooleanExpression) } +
-            booleanAtom.map { atom: BooleanExpression -> atom })
+            (not * advancedBooleanAtom).map { results: List<Any> ->
+              Not(results[1] as BooleanExpression)
+            } +
+            advancedBooleanAtom.map { atom: BooleanExpression -> atom })
+  }
+
+  private val booleanExpr = undefined()
+
+  init {
+    booleanExpr.set(
+        (boolenAtom * and * boolenAtom).map { results: List<Any> ->
+          And(results[0] as BooleanExpression, results[2] as BooleanExpression)
+        } +
+            (boolenAtom * or * boolenAtom).map { results: List<Any> ->
+              Or(results[0] as BooleanExpression, results[2] as BooleanExpression)
+            } +
+            (boolenAtom * imply * boolenAtom).map { results: List<Any> ->
+              Imply(results[0] as BooleanExpression, results[2] as BooleanExpression)
+            } +
+            (boolenAtom * equiv * boolenAtom).map { results: List<Any> ->
+              Equiv(results[0] as BooleanExpression, results[2] as BooleanExpression)
+            } +
+            (not * boolenAtom).map { results: List<Any> -> Not(results[1] as BooleanExpression) } +
+            boolenAtom.map { atom: BooleanExpression -> atom })
   }
 
   private val stmt = undefined()
@@ -226,7 +252,7 @@ object Parser {
       }
 
   private val condition =
-      (lparen * booleanExpr * rparen).map { results: List<Any> -> results[1] } /*+
+      (lparen * advancedBooleanExpr * rparen).map { results: List<Any> -> results[1] } /*+
           (lparen * arithExpr * rparen).map { result: List<Any> ->
             Bool(result[1] as ArithmeticExpression)
           }*/
@@ -234,12 +260,12 @@ object Parser {
   private val block = (lcbr * seqOfStmts * rcbr).map { results: List<Any> -> results[1] }
 
   private val invar =
-      (invariant * lparen * booleanExpr * rparen).map { results: List<Any> -> results[2] }
+      (invariant * lparen * advancedBooleanExpr * rparen).map { results: List<Any> -> results[2] }
 
   init {
     stmt.set(
         (addressExpr * assign * booleanExpr * semicolon).map { results: List<Any> ->
-          BooleanAssignment(results[0] as AddressExpression, expr = results[2] as BooleanExpression)
+          BooleanAssignment(results[0] as AddressExpression, results[2] as BooleanExpression)
         } +
             (addressExpr * assign * arithExpr * semicolon).map { results: List<Any> ->
               IntAssignment(results[0] as AddressExpression, results[2] as ArithmeticExpression)
@@ -284,7 +310,7 @@ object Parser {
   private fun buildType(i: Int): Type = if (i == 0) BasicType.INT else Pointer(buildType(i - 1))
 
   private fun buildBoolType(i: Int): Type =
-      if (i == 0) BasicType.BOOLEAN else Pointer(buildType(i - 1))
+      if (i == 0) BasicType.BOOLEAN else Pointer(buildBoolType(i - 1))
 
   private val typeSize =
       (lsbr * numeral * rsbr).map { results: List<Any> ->
@@ -329,13 +355,13 @@ object Parser {
       (vars *
               colon *
               declList *
-              (pre * colon * lparen * booleanExpr * rparen)
+              (pre * colon * lparen * advancedBooleanExpr * rparen)
                   .optional(listOf(0, 0, 0, True, 0))
                   .map { results: List<Any> -> results[3] as BooleanExpression } *
               code *
               colon *
               seqOfStmts *
-              (post * colon * lparen * booleanExpr * rparen)
+              (post * colon * lparen * advancedBooleanExpr * rparen)
                   .optional(listOf(0, 0, 0, True, 0))
                   .map { results: List<Any> -> results[3] as BooleanExpression })
           .end()
